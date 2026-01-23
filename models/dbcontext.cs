@@ -1,26 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
 
 namespace blog_app_ai_dotnet.models;
 
-public partial class dbcontext : DbContext
+public partial class DefaultContext : DbContext
 {
-    public dbcontext()
+    IConfiguration _configuration;
+    public DefaultContext(IConfiguration config)
     {
+        _configuration = config;
     }
 
-    public dbcontext(DbContextOptions<dbcontext> options)
+    public DefaultContext(DbContextOptions<DefaultContext> options, IConfiguration config)
         : base(options)
     {
+        _configuration = config;
     }
 
     public virtual DbSet<AuthenticationUser> AuthenticationUsers { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseMySql("server=127.0.0.1;port=3306;database=blog-app;uid=root;pwd=amr_emam", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.43-mysql"));
+    {
+        optionsBuilder.UseMySql(
+        _configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(
+            _configuration.GetConnectionString("DefaultConnection")
+        ));
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
