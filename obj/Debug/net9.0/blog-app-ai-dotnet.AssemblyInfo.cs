@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("blog-app-ai-dotnet")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9962d9f3f42dbbc7f56370d69c8cb1108a068723")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+06b66ac2a1b0ffc4e9d01f2b1e216d448c04b212")]
 [assembly: System.Reflection.AssemblyProductAttribute("blog-app-ai-dotnet")]
 [assembly: System.Reflection.AssemblyTitleAttribute("blog-app-ai-dotnet")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
