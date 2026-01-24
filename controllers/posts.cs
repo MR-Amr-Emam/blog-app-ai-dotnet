@@ -44,7 +44,7 @@ namespace blog_app_ai_dotnet.Controllers
             {
                 Title = blogdto.Title,
                 Content = blogdto.Content,
-                Image = "blogs"+fileName,
+                Image = "blogs/"+fileName,
                 CreatedAt = DateTime.Now
             };
             _aicontext.Blogs.Add(blog);
