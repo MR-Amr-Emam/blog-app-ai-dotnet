@@ -1,3 +1,4 @@
+using AiContextModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,24 +9,55 @@ namespace blog_app_ai_dotnet.Controllers
     [Authorize]
     public class PostsController : ControllerBase
     {
+        AiContext _aicontext;
+        IWebHostEnvironment _env;
+        List<string> _extentions = new List<string>(){".jpg", ".jpeg", ".png"};
+
+        public PostsController(AiContext aicontext, IWebHostEnvironment env)
+        {
+            _aicontext = aicontext;
+            _env = env;
+        }
+
         [HttpGet]
         public IActionResult GetAllPosts()
         {
-            // TODO: Inject your service and retrieve posts from database
-            var posts = new List<PostDto>();
-            PostDto post = new PostDto{Id=1, Content="hello", AuthorName="amr", CreatedAt=DateTime.Now, LikeCount=0, CommentCount=0};
-            posts.Add(post);
-            return Ok(posts);    
+            List<Blog> blogs = _aicontext.Blogs.ToList();
+            return Ok(blogs);
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> CreatePost([FromForm] BlogDTO blogdto)
+        {
+            string path = Path.Combine(_env.ContentRootPath, "wwwroot/blogs");
+
+            string ext = Path.GetExtension(blogdto.Image.FileName);
+            if(!_extentions.Contains(ext))return BadRequest();
+            string fileName = $"{Guid.NewGuid()}{ext}";
+            string filePath = Path.Combine(path, fileName);
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await blogdto.Image.CopyToAsync(stream);
+            }
+            Blog blog = new Blog()
+            {
+                Title = blogdto.Title,
+                Content = blogdto.Content,
+                Image = "blogs"+fileName,
+                CreatedAt = DateTime.Now
+            };
+            _aicontext.Blogs.Add(blog);
+            _aicontext.SaveChanges();
+            return Ok(blog);
         }
     }
 
-    public class PostDto
+    public class BlogDTO
     {
-        public int Id { get; set; }
-        public string Content { get; set; }
-        public string AuthorName { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public int LikeCount { get; set; }
-        public int CommentCount { get; set; }
+        public required string Title {get; set;}
+        public required string Content {get; set;}
+        public required IFormFile Image {get; set;}
     }
+
 }

@@ -1,10 +1,9 @@
 using blog_app_ai_dotnet.models;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
-
+using AiContextModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 // my custom
 builder.Services.AddDbContext<DefaultContext>();
+builder.Services.AddDbContext<AiContext>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -63,7 +63,9 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]??"just a key :)")
+        )
     };
 });
 

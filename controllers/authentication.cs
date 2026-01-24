@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Net.Http.Headers;
 using blog_app_ai_dotnet.models;
 
 using System.IdentityModel.Tokens.Jwt;
@@ -21,13 +22,31 @@ namespace controllers
         }
 
         [HttpPost]
-        public IActionResult LoginPost(UserDTO user_request)
+        public async Task<IActionResult> LoginPost(UserDTO user_request)
         {
-            AuthenticationUser? user = _context.AuthenticationUsers.SingleOrDefault(u=>user_request.Username==u.Username);
-            if (user == null)
+            HttpClient client = new HttpClient()
             {
-                return Unauthorized();
-            }
+                BaseAddress = new Uri((_configuration["BackendOrigin"]+"/auth/checkuser/")??"")
+            };
+            client.DefaultRequestHeaders.Authorization = 
+                new AuthenticationHeaderValue("Basic", Convert.ToBase64String(
+                    Encoding.ASCII.GetBytes(_configuration["Admin:Username"]+":"+_configuration["Admin:Password"])
+                ));
+            var values = new Dictionary<string, string>
+                {
+                    { "username", user_request.Username },
+                    { "password", user_request.Password }
+                };
+            var content = new FormUrlEncodedContent(values);
+
+            var response = await client.PostAsync("", content);
+            if (!response.IsSuccessStatusCode)return Unauthorized();
+            var data = await response.Content.ReadFromJsonAsync<ResponseDTO>();
+            if(data is null || !data.State)return Unauthorized();
+            AuthenticationUser? user = _context.AuthenticationUsers.SingleOrDefault(u=>
+                data.Username==u.Username && data.Password==u.Password
+            );
+            if (user == null)return Unauthorized();
             string token = AuthMethods.CreateJwtToken(
                 id: (int)user.Id,
                 username: user.Username,
@@ -42,6 +61,13 @@ namespace controllers
     {
         public required string Username {get; set;}
         public required string Password {get; set;}
+    }
+
+    public class ResponseDTO
+    {
+        public required bool State {get; set;}
+        public string Username {get; set;}
+        public string Password {get; set;}
     }
 
     static public class AuthMethods
