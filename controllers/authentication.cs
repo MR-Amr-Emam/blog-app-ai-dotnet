@@ -50,6 +50,7 @@ namespace controllers
             string token = AuthMethods.CreateJwtToken(
                 id: (int)user.Id,
                 username: user.Username,
+                isStaff: user.IsStaff,
                 context: _context,
                 configuration: _configuration
             );
@@ -66,13 +67,13 @@ namespace controllers
     public class ResponseDTO
     {
         public required bool State {get; set;}
-        public string Username {get; set;}
-        public string Password {get; set;}
+        public required string Username {get; set;}
+        public required string Password {get; set;}
     }
 
     static public class AuthMethods
     {
-        static public string CreateJwtToken(int id, string username, DefaultContext context, IConfiguration configuration)
+        static public string CreateJwtToken(int id, string username, bool isStaff, DefaultContext context, IConfiguration configuration)
         {
             var jwtSettings = configuration.GetSection("Jwt");
 
@@ -86,12 +87,13 @@ namespace controllers
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, id.ToString()),
-                new Claim(ClaimTypes.Name, username)
+                new Claim(ClaimTypes.Name, username),
+                new Claim(ClaimTypes.Role, isStaff?"admin":"user")
             };
 
             var token = new JwtSecurityToken(
                 issuer: jwtSettings["Issuer"],
-                //audience: jwtSettings["Audience"],
+                audience: jwtSettings["Audience"],
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(
                     double.Parse(jwtSettings["DurationInMinutes"]!)),

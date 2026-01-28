@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using AiContextModels;
+using CreateAiBlog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,7 +59,7 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidateAudience = false,
+        ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
@@ -69,8 +70,18 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: "allow kosom elcors",
+        policy  =>
+        {
+          policy.WithOrigins(builder.Configuration["Jwt:Audience"]??"").AllowAnyMethod()
+          .WithHeaders("Content-Type", "Authorization");
+        }
+    );
+});
 
-
+builder.Services.AddSingleton<IBlogAiService, BlogAiService>();
 
 
 
@@ -113,6 +124,7 @@ app.UseSwaggerUI();
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseCors("allow kosom elcors");
 
 app.Run();
 
