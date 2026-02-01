@@ -58,7 +58,7 @@ namespace blog_app_ai_dotnet.Controllers
                 };
                 blogsDto.Add(blogDto);
             }
-            return Ok(blogsDto);
+            return Ok(blogsDto.OrderByDescending(b=>b.Date));
 
         }
 

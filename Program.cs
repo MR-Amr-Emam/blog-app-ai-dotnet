@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.OpenApi.Models;
 using AiContextModels;
 using CreateAiBlog;
+using backgroundServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -82,8 +83,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddSingleton<IBlogAiService, BlogAiService>();
-
-
+builder.Services.AddHostedService<AiBlogBG>();
 
 
 

@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.Json;
 using System.Net.Http.Headers;
-using Microsoft.IdentityModel.Tokens;
 
 
 namespace CreateAiBlog
@@ -15,7 +14,7 @@ namespace CreateAiBlog
     public class BlogAiService(IConfiguration _config):IBlogAiService{
 
         public async Task<AiBlog?> CreateAiBlog(){
-            string key = _config["OpenRouter:token"]??"";
+            string key = Environment.GetEnvironmentVariable("AiBlogToken")??"";
             string model = _config["OpenRouter:model"]??"";
             using var client = new HttpClient();
 
@@ -27,16 +26,16 @@ namespace CreateAiBlog
                     {"role", "system"},
                     {"content",
                     """
-                        your task is to generate json string for a post its content depends on the user ask,
-                        the json object should include only these keys
+                        your task is to generate a valid json string for a post its content depends on the user ask,
+                        the json object should include only these keys, (the data should be actually true and real)
                         1) 'blogTitle'
                         2) 'blogDescription'
-                        3) 'blogImage' which is a remote url image related to post content
+                        3) 'blogImage' that is remote image link about the post content make sure the link is actually working
                     """}
                 },
                 new Dictionary<string, string>(){
                     {"role", "user"},
-                    {"content", "make a post about trending event that day"}
+                    {"content", "make a post about the most trending event that week"}
                 }
             ];
 
@@ -50,15 +49,24 @@ namespace CreateAiBlog
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             var response = await client.PostAsync(_config["OpenRouter:remoteurl"]??"", content);
 
-            if (!response.IsSuccessStatusCode)return null;
+            if (!response.IsSuccessStatusCode){
+                Console.WriteLine(response.StatusCode.ToString());
+                return null;
+            };
 
             string responseJson = await response.Content.ReadAsStringAsync();
             JsonDocument doc = JsonDocument.Parse(responseJson);
             string jsonString = doc.RootElement.GetProperty("choices")[0]
                 .GetProperty("message")
                 .GetProperty("content").GetString()??"";
-            jsonString = JsonDetect(jsonString);
             Console.WriteLine(jsonString);
+            try
+            {
+                jsonString = JsonDetect(jsonString);   
+            }catch(Exception e){
+                Console.WriteLine(e.Message);
+                return null;
+            }
             JsonElement blogJson = JsonDocument.Parse(jsonString).RootElement;
            
             string imagePath = await DownloadImage(blogJson.GetProperty("blogImage").GetString()??"");
@@ -89,14 +97,18 @@ namespace CreateAiBlog
             // Get the image as a stream
                 using (HttpResponseMessage httpResponse = await httpClient.GetAsync(imageUrl))
                 {
-                    string extention = httpResponse.Content.Headers.ContentType?.MediaType??"";
-                    extention = extention.Substring(extention.LastIndexOf('/')+1);
-                    if(!allowedExtensions.Contains(extention))return "";
+                    string extension = httpResponse.Content.Headers.ContentType?.MediaType??"";
+                    extension = extension.Substring(extension.LastIndexOf('/')+1);
+                    Console.WriteLine(extension);
+                    if(!allowedExtensions.Contains(extension)){
+                        Console.WriteLine("invalid extension");
+                        return "";
+                    }
                     Guid imageId = Guid.NewGuid();
-                    imagePath = $"blogs/{imageId}.{extention}";
+                    imagePath = $"blogs/{imageId}.{extension}";
                     Stream imageStream = await httpResponse.Content.ReadAsStreamAsync();
                     // Create a FileStream to write the data to a local file
-                    FileStream fileStream = new FileStream(imagePath, FileMode.Create, FileAccess.Write);
+                    FileStream fileStream = new FileStream(Path.Combine("wwwroot", imagePath), FileMode.Create, FileAccess.Write);
                     await imageStream.CopyToAsync(fileStream);
                     //Console.WriteLine($"Image successfully downloaded to: {destinationPath}");
                 }
@@ -115,6 +127,10 @@ namespace CreateAiBlog
         public required string Title {get; set;}
         public required string  Content  {get; set;}
         public required string Image {get; set;}
+
+        public override string ToString(){
+            return $"{this.Title} \n \n {this.Content} \n \n {this.Image}";
+        }
     }
 
 
